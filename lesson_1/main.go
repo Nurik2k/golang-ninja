@@ -43,9 +43,9 @@ func main() {
 
 	wg := &sync.WaitGroup{}
 
-	users := generateUsers(1000)
-
-	for _, user := range users {
+	users := make(chan User)
+	go generateUsers(1000, users)
+	for user := range users {
 		wg.Add(1)
 		go saveUserInfo(user, wg)
 	}
@@ -75,18 +75,17 @@ func saveUserInfo(user User, wg *sync.WaitGroup) error {
 	return nil
 }
 
-func generateUsers(count int) []User {
-	users := make([]User, count)
+func generateUsers(count int, users chan User) {
+	defer close(users)
 
 	for i := 0; i < count; i++ {
-		users[i] = User{
+		users <- User{
 			id:    i + 1,
 			email: fmt.Sprintf("user%d@ninja.go", i+1),
 			logs:  generateLogs(rand.Intn(1000)),
 		}
+		//time.Sleep(time.Millisecond * 10)
 	}
-
-	return users
 }
 
 func generateLogs(count int) []logItem {
